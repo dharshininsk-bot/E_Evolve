@@ -8,22 +8,37 @@ datasource db {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  role         String        @default("CONSUMER") // CONSUMER, COLLECTOR, RECYCLER, PRODUCER
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  wasteLogs    WasteLog[]    @relation("ConsumerWasteLogs")
-  collectedLogs WasteLog[]   @relation("CollectorWasteLogs")
-  recycledLogs  WasteLog[]   @relation("RecyclerWasteLogs")
+  id           String             @id @default(cuid())
+  email        String             @unique
+  role         String             @default("CONSUMER") // CONSUMER, COLLECTOR, RECYCLER, PRODUCER
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  wasteLogs    WasteLog[]         @relation("ConsumerWasteLogs")
+  collectedLogs WasteLog[]        @relation("CollectorWasteLogs")
+  recycledLogs  WasteLog[]        @relation("RecyclerWasteLogs")
   milestones   Milestone[]
+  recyclerProfile RecyclerProfile?
+}
+
+model RecyclerProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  businessName String
+  location     String
+  rates        String   // JSON string representation of rates
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model WasteLog {
   id                String   @id @default(cuid())
   weight            Float
   plasticType       String
-  status            String   @default("COLLECTED") // COLLECTED, RECYCLED
+  status            String   @default("REQUESTED") // REQUESTED, ACCEPTED, VERIFIED, MINTED
+  state             String?
+  district          String?
+  pincode           String?
   collectorId       String
   collector         User     @relation("CollectorWasteLogs", fields: [collectorId], references: [id])
   consumerId        String?

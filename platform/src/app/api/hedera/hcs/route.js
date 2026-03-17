@@ -11,24 +11,19 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
-    const { weight, plasticType } = await request.json();
+    const { logId } = await request.json();
 
-    let user = await prisma.user.findFirst({ where: { role: "COLLECTOR" } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: { email: `demo-collector-${Date.now()}@evolve.com`, role: "COLLECTOR" }
-      });
+    if (!logId) {
+      return NextResponse.json({ error: "Log ID is required" }, { status: 400 });
     }
 
-    const log = await prisma.wasteLog.create({
-      data: {
-        weight: parseFloat(weight) || 0,
-        plasticType: plasticType || "UNKNOWN",
-        status: "PENDING_SYNC",
-        collectorId: user.id
-      }
+    const log = await prisma.wasteLog.findUnique({
+      where: { id: logId }
     });
-    const logId = log.id;
+
+    if (!log) {
+      return NextResponse.json({ error: "Log not found" }, { status: 404 });
+    }
 
     // Hedera Logic
     const accountId = process.env.HEDERA_ACCOUNT_ID;
@@ -39,10 +34,18 @@ export async function POST(request) {
     const client = Client.forTestnet().setOperator(accountId, privateKey);
 
     let txResponse, receipt;
+    const messagePayload = {
+      weight: log.weight,
+      plasticType: log.plasticType,
+      logId: log.id,
+      recyclerId: log.recyclerId || "UNKNOWN",
+      timestamp: new Date().toISOString()
+    };
+
     try {
       const transaction = new TopicMessageSubmitTransaction()
         .setTopicId(topicId)
-        .setMessage(JSON.stringify({ weight, plasticType, logId, timestamp: new Date().toISOString() }));
+        .setMessage(JSON.stringify(messagePayload));
       txResponse = await transaction.execute(client);
       receipt = await txResponse.getReceipt(client);
     } catch (hcsError) {
@@ -54,7 +57,7 @@ export async function POST(request) {
 
         const retryTx = new TopicMessageSubmitTransaction()
           .setTopicId(topicId)
-          .setMessage(JSON.stringify({ weight, plasticType, logId, timestamp: new Date().toISOString() }));
+          .setMessage(JSON.stringify(messagePayload));
         txResponse = await retryTx.execute(client);
         receipt = await retryTx.getReceipt(client);
       } else {

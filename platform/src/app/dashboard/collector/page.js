@@ -1,29 +1,123 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Scale, Package, Send, CheckCircle2, ChevronRight, Hash, Radio } from "lucide-react";
+import { Trash2, Scale, Package, Send, CheckCircle2, ChevronRight, Hash, Radio, MapPin, Factory } from "lucide-react";
 
 export default function CollectorDashboard() {
   const router = useRouter();
   const [weight, setWeight] = useState("");
   const [plasticType, setPlasticType] = useState("PET");
-  const [isLogging, setIsLogging] = useState(false);
+  
+  // Location State
+  const [stateName, setStateName] = useState("Tamil Nadu");
+  const [district, setDistrict] = useState("");
+  const [pincode, setPincode] = useState("");
+  
+  // Recycler State
+  const [recyclers, setRecyclers] = useState([]);
+  const [selectedRecycler, setSelectedRecycler] = useState("");
+  
+  // Action State
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncingLogId, setSyncingLogId] = useState(null);
   const [result, setResult] = useState(null);
+  
+  // Logs Feed State
+  const [logs, setLogs] = useState([]);
 
-  const handleLogCollection = async (e) => {
+  // Fetch logs on load
+  const fetchLogs = async () => {
+    try {
+      const res = await fetch("/api/logs/collector");
+      const data = await res.json();
+      if (data.success) {
+        setLogs(data.logs);
+      }
+    } catch (err) {
+      console.error("Failed to fetch logs", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  // Fetch recyclers when district changes
+  useEffect(() => {
+    const fetchRecyclers = async () => {
+      if (district) {
+        try {
+          const res = await fetch(`/api/recyclers?state=${stateName}&district=${district}`);
+          const data = await res.json();
+          if (data.success) {
+            setRecyclers(data.recyclers);
+            if (data.recyclers.length > 0) {
+              setSelectedRecycler(data.recyclers[0].user.id);
+            } else {
+              setSelectedRecycler("");
+            }
+          }
+        } catch (err) {
+          console.error("Failed to fetch recyclers", err);
+        }
+      } else {
+        setRecyclers([]);
+        setSelectedRecycler("");
+      }
+    };
+    fetchRecyclers();
+  }, [stateName, district]);
+
+  const handleRequestPickup = async (e) => {
     e.preventDefault();
-    setIsLogging(true);
+    if (!selectedRecycler) {
+        alert("Please select a recycler before requesting pickup.");
+        return;
+    }
+    setIsRequesting(true);
+    setResult(null);
+
+    try {
+      const response = await fetch("/api/logs/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weight,
+          plasticType,
+          state: stateName,
+          district,
+          pincode,
+          recyclerId: selectedRecycler
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setWeight("");
+        fetchLogs(); // Reload logs
+      } else {
+        alert("Failed to request pickup: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error processing request");
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const handleSubmitToLedger = async (logId) => {
+    setIsSyncing(true);
+    setSyncingLogId(logId);
     setResult(null);
 
     try {
       const response = await fetch("/api/hedera/hcs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          weight,
-          plasticType,
-        }),
+        body: JSON.stringify({ logId }),
       });
 
       const data = await response.json();
@@ -32,19 +126,20 @@ export default function CollectorDashboard() {
           sequenceNumber: data.sequenceNumber,
           transactionId: data.transactionId,
           logId: data.logId,
-          weight: weight,
-          type: plasticType,
+          weight: logs.find(l => l.id === logId)?.weight,
+          type: logs.find(l => l.id === logId)?.plasticType,
         });
-        setWeight("");
-        router.refresh(); // Force update stats
+        fetchLogs(); 
+        router.refresh(); 
       } else {
-        alert("Failed to log collection: " + (data.error || "Unknown error"));
+        alert("Failed to sync to ledger: " + (data.error || "Unknown error"));
       }
     } catch (err) {
       console.error(err);
       alert("Error connecting to ledger");
     } finally {
-      setIsLogging(false);
+      setIsSyncing(false);
+      setSyncingLogId(null);
     }
   };
 
@@ -52,7 +147,7 @@ export default function CollectorDashboard() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Logging Hub</h1>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Marketplace Hub</h1>
           <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Collector Dashboard • Hedera HCS Gateway</p>
         </div>
       </div>
@@ -66,13 +161,13 @@ export default function CollectorDashboard() {
                 <Trash2 className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Log New Collection</h3>
-                <p className="text-xs text-slate-500 font-medium">Every gram is recorded immutably on Hedera</p>
+                <h3 className="text-lg font-bold text-slate-800">Request Pickup</h3>
+                <p className="text-xs text-slate-500 font-medium">Match with local recyclers for best rates</p>
               </div>
             </div>
 
-            <form onSubmit={handleLogCollection} className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <form onSubmit={handleRequestPickup} className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-100 pb-6">
                 <div className="space-y-2">
                   <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
                     <Scale className="w-4 h-4" />
@@ -82,7 +177,7 @@ export default function CollectorDashboard() {
                     type="number"
                     step="0.1"
                     required
-                    disabled={isLogging}
+                    disabled={isRequesting}
                     value={weight}
                     onChange={(e) => setWeight(e.target.value)}
                     placeholder="e.g. 15.0"
@@ -97,7 +192,7 @@ export default function CollectorDashboard() {
                   </label>
                   <select
                     value={plasticType}
-                    disabled={isLogging}
+                    disabled={isRequesting}
                     onChange={(e) => setPlasticType(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none bg-white text-lg disabled:bg-slate-50 disabled:text-slate-400"
                   >
@@ -109,20 +204,112 @@ export default function CollectorDashboard() {
                 </div>
               </div>
 
+              {/* Location Picker */}
+              <div className="space-y-4 pt-2">
+                <h4 className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>Pickup Location</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-500">State</label>
+                        <select 
+                            value={stateName} 
+                            onChange={(e) => setStateName(e.target.value)}
+                            disabled={isRequesting}
+                            className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm"
+                        >
+                            <option value="Tamil Nadu">Tamil Nadu</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-500">District / Area</label>
+                        <select 
+                            value={district} 
+                            onChange={(e) => setDistrict(e.target.value)}
+                            required
+                            disabled={isRequesting}
+                            className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm"
+                        >
+                            <option value="" disabled>Select Area</option>
+                            <option value="Adyar">Adyar</option>
+                            <option value="Guindy">Guindy</option>
+                            <option value="Velachery">Velachery</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-slate-500">Pincode</label>
+                        <input
+                            type="text"
+                            required
+                            value={pincode}
+                            onChange={(e) => setPincode(e.target.value)}
+                            disabled={isRequesting}
+                            placeholder="e.g. 600020"
+                            className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm"
+                        />
+                    </div>
+                </div>
+              </div>
+
+              {/* Recycler Matcher */}
+              {district && (
+                <div className="mt-6 p-6 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
+                    <h4 className="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                        <Factory className="w-4 h-4 text-blue-600" />
+                        <span>Available Recyclers Nearby</span>
+                    </h4>
+                    {recyclers.length === 0 ? (
+                        <p className="text-sm text-slate-500 italic">No registered recyclers found in {district}.</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {recyclers.map(r => {
+                                const rates = r.rates ? JSON.parse(r.rates) : {};
+                                const rateForType = rates[plasticType];
+                                return (
+                                    <label key={r.id} className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition ${selectedRecycler === r.user.id ? 'border-blue-500 bg-blue-50/50' : 'border-slate-300 bg-white hover:border-slate-400'}`}>
+                                        <div className="flex items-center space-x-3">
+                                            <input 
+                                                type="radio" 
+                                                name="recycler" 
+                                                value={r.user.id} 
+                                                checked={selectedRecycler === r.user.id}
+                                                onChange={() => setSelectedRecycler(r.user.id)}
+                                                className="w-4 h-4 text-blue-600"
+                                            />
+                                            <div>
+                                                <div className="font-bold text-slate-800">{r.businessName}</div>
+                                                <div className="text-xs text-slate-500">{r.location}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold text-emerald-600">
+                                                {rateForType ? `₹${rateForType}/kg` : 'Rate TBD'}
+                                            </div>
+                                            <div className="text-[10px] text-slate-400 font-bold uppercase">For {plasticType}</div>
+                                        </div>
+                                    </label>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={isLogging}
-                className="w-full bg-slate-900 text-white rounded-xl py-4 flex items-center justify-center space-x-3 hover:bg-slate-800 transition active:scale-[0.98] disabled:opacity-50 font-bold text-lg"
+                disabled={isRequesting || recyclers.length === 0}
+                className="w-full bg-slate-900 text-white rounded-xl py-4 flex items-center justify-center space-x-3 hover:bg-slate-800 transition active:scale-[0.98] disabled:opacity-50 font-bold text-lg mt-6"
               >
-                {isLogging ? (
+                {isRequesting ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Transacting with Ledger...</span>
+                    <span>Requesting Pickup...</span>
                   </>
                 ) : (
                   <>
                     <Send className="w-5 h-5" />
-                    <span>Submit to Ledger</span>
+                    <span>Request Pickup</span>
                   </>
                 )}
               </button>
@@ -130,34 +317,64 @@ export default function CollectorDashboard() {
           </div>
         </div>
 
-        {/* Status / Success Feed */}
+        {/* Logs Feed */}
         <div className="space-y-6">
-          <div className="bg-slate-900 rounded-2xl p-8 text-white relative overflow-hidden h-full">
-            <div className="relative z-10">
-              <h3 className="text-lg font-bold mb-4">Logging Stats</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-slate-400 text-sm">Today's Collections</span>
-                  <span className="font-mono">124.5 kg</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-slate-400 text-sm">Pending Verify</span>
-                  <span className="font-mono text-yellow-400">3 Logs</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-white/10">
-                  <span className="text-slate-400 text-sm">On-Chain Sync</span>
-                  <span className="text-green-400 flex items-center font-bold">100% 🚀</span>
-                </div>
-              </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col">
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex justify-between items-center">
+                <h3 className="font-bold text-slate-800">Your Logs</h3>
+                <span className="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs font-bold">{logs.length} Total</span>
             </div>
-            <div className="absolute top-0 right-0 p-8 opacity-10">
-              <Radio className="w-24 h-24" />
+            <div className="p-4 space-y-4 overflow-y-auto max-h-[600px] flex-1">
+                {logs.length === 0 ? (
+                     <p className="text-sm text-slate-400 text-center py-8">No collections logged yet.</p>
+                ) : (
+                    logs.map(log => (
+                        <div key={log.id} className="p-4 border border-slate-200 rounded-xl space-y-3">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <div className="font-bold text-slate-800">{log.weight}kg <span className="text-slate-500 font-normal">{log.plasticType}</span></div>
+                                    {log.recycler?.recyclerProfile && (
+                                        <div className="text-xs text-slate-500 mt-1">To: {log.recycler.recyclerProfile.businessName}</div>
+                                    )}
+                                </div>
+                                <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
+                                    ${log.status === 'REQUESTED' ? 'bg-yellow-100 text-yellow-700' : 
+                                      log.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' : 
+                                      log.status === 'VERIFIED' ? 'bg-green-100 text-green-700' : 
+                                      'bg-emerald-100 text-emerald-800'}`}>
+                                    {log.status}
+                                </span>
+                            </div>
+                            
+                            {log.status === 'ACCEPTED' && (
+                                <button 
+                                    onClick={() => handleSubmitToLedger(log.id)}
+                                    disabled={isSyncing && syncingLogId === log.id}
+                                    className="w-full py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition disabled:opacity-50 flex justify-center items-center space-x-2"
+                                >
+                                    {isSyncing && syncingLogId === log.id ? (
+                                        <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Radio className="w-3 h-3" />
+                                    )}
+                                    <span>Sync to Ledger</span>
+                                </button>
+                            )}
+
+                            {log.hcsSequenceNumber && (
+                                <div className="pt-2 mt-2 border-t border-slate-100 text-[10px] text-slate-400 font-mono">
+                                    HCS Seq: {log.hcsSequenceNumber}
+                                </div>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Success Notification - Sequence Number Focus */}
+      {/* Success Notification */}
       {result && (
         <div className="bg-green-50 rounded-2xl p-8 border border-green-200 animate-in slide-in-from-bottom duration-500 shadow-lg shadow-green-500/5">
           <div className="flex items-start space-x-4">
@@ -166,7 +383,7 @@ export default function CollectorDashboard() {
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-green-900 leading-none">Log Successful</h3>
+                <h3 className="text-xl font-bold text-green-900 leading-none">Sync Successful</h3>
                 <span className="px-2 py-1 bg-green-200 text-green-700 text-[10px] font-bold uppercase rounded tracking-widest leading-none">Immutable</span>
               </div>
               <p className="text-green-700 mt-2 font-medium">Your donation of <span className="font-bold underline">{result.weight}kg {result.type}</span> was successfully broadcast to the Hedera network.</p>
@@ -205,3 +422,4 @@ export default function CollectorDashboard() {
     </div>
   );
 }
+
