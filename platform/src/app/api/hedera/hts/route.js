@@ -52,13 +52,23 @@ export async function POST(request) {
         const mintResp = await mintTx.execute(client);
 
         if (wasteLog) {
-            await prisma.wasteLog.update({
-                where: { id: logId },
-                data: {
-                    status: "MINTED",
-                    htsTransactionId: mintResp.transactionId.toString()
-                }
-            });
+            await prisma.$transaction([
+                prisma.wasteLog.update({
+                    where: { id: logId },
+                    data: {
+                        status: "MINTED",
+                        htsTransactionId: mintResp.transactionId.toString()
+                    }
+                }),
+                ...(wasteLog.recyclerId ? [
+                    prisma.recyclerProfile.update({
+                        where: { userId: wasteLog.recyclerId },
+                        data: {
+                            prcBalance: { increment: amountToMint }
+                        }
+                    })
+                ] : [])
+            ]);
         }
 
         return NextResponse.json({
