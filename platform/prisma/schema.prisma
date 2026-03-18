@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String             @id @default(cuid())
+  email        String             @unique
+  role         String             @default("CONSUMER") // CONSUMER, COLLECTOR, RECYCLER, PRODUCER
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  wasteLogs    WasteLog[]         @relation("ConsumerWasteLogs")
+  collectedLogs WasteLog[]        @relation("CollectorWasteLogs")
+  recycledLogs  WasteLog[]        @relation("RecyclerWasteLogs")
+  milestones   Milestone[]
+  recyclerProfile RecyclerProfile?
+}
+
+model RecyclerProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  businessName String
+  location     String
+  rates        String   // JSON string representation of rates
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model WasteLog {
+  id                String   @id @default(cuid())
+  weight            Float
+  plasticType       String
+  status            String   @default("REQUESTED") // REQUESTED, ACCEPTED, VERIFIED, MINTED
+  state             String?
+  district          String?
+  pincode           String?
+  collectorId       String
+  collector         User     @relation("CollectorWasteLogs", fields: [collectorId], references: [id])
+  consumerId        String?
+  consumer          User?    @relation("ConsumerWasteLogs", fields: [consumerId], references: [id])
+  recyclerId        String?
+  recycler          User?    @relation("RecyclerWasteLogs", fields: [recyclerId], references: [id])
+  hcsSequenceNumber String?
+  htsTransactionId  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  totalWeight Float    @default(0)
+  couponCode  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
