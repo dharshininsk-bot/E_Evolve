@@ -8,16 +8,19 @@ datasource db {
 }
 
 model User {
-  id           String             @id @default(cuid())
-  email        String             @unique
-  role         String             @default("CONSUMER") // CONSUMER, COLLECTOR, RECYCLER, PRODUCER
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  wasteLogs    WasteLog[]         @relation("ConsumerWasteLogs")
-  collectedLogs WasteLog[]        @relation("CollectorWasteLogs")
-  recycledLogs  WasteLog[]        @relation("RecyclerWasteLogs")
-  milestones   Milestone[]
-  recyclerProfile RecyclerProfile?
+  id               String             @id @default(cuid())
+  email            String             @unique
+  role             String             @default("CONSUMER") // CONSUMER, COLLECTOR, RECYCLER, PRODUCER
+  creditsPurchased Float              @default(0) // Used by Producers
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  wasteLogs        WasteLog[]         @relation("ConsumerWasteLogs")
+  collectedLogs    WasteLog[]         @relation("CollectorWasteLogs")
+  recycledLogs     WasteLog[]         @relation("RecyclerWasteLogs")
+  milestones       Milestone[]
+  recyclerProfile  RecyclerProfile?
+  purchases        CreditTransaction[] @relation("ProducerPurchases")
+  sales            CreditTransaction[] @relation("RecyclerSales")
 }
 
 model RecyclerProfile {
@@ -27,6 +30,7 @@ model RecyclerProfile {
   businessName String
   location     String
   rates        String   // JSON string representation of rates
+  prcBalance   Float    @default(0) // Available credits to sell
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
@@ -59,4 +63,15 @@ model Milestone {
   couponCode  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  producerId  String
+  producer    User     @relation("ProducerPurchases", fields: [producerId], references: [id])
+  recyclerId  String
+  recycler    User     @relation("RecyclerSales", fields: [recyclerId], references: [id])
+  amount      Float
+  amountUsd   Float
+  createdAt   DateTime @default(now())
 }

@@ -1,10 +1,62 @@
 "use client";
 
-import React, { useState } from "react";
-import { ShoppingBag, Search, Shovel, ShieldCheck, MapPin, ExternalLink, Filter } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ShoppingBag, Search, Shovel, ShieldCheck, MapPin, ExternalLink, Filter, Factory } from "lucide-react";
 
 export default function ProducerDashboard() {
   const [activeTab, setActiveTab] = useState("marketplace");
+  const [profile, setProfile] = useState(null);
+  const [listings, setListings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPurchasing, setIsPurchasing] = useState(null);
+
+  const fetchData = async () => {
+      setIsLoading(true);
+      try {
+          const profRes = await fetch("/api/producer/profile");
+          const profData = await profRes.json();
+          if (profData.success) setProfile(profData.profile);
+
+          const listRes = await fetch("/api/marketplace/listings");
+          const listData = await listRes.json();
+          if (listData.success) setListings(listData.listings);
+      } catch (err) {
+          console.error("Failed to fetch data", err);
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handlePurchase = async (recyclerId, amount) => {
+      if (!profile) return;
+      setIsPurchasing(recyclerId);
+      try {
+          const res = await fetch("/api/marketplace/purchase", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  producerId: profile.id,
+                  recyclerId,
+                  amount
+              })
+          });
+          const data = await res.json();
+          if (data.success) {
+              alert("Purchase successful!");
+              fetchData();
+          } else {
+              alert("Purchase failed: " + data.error);
+          }
+      } catch (err) {
+          alert("Error purchasing credits");
+      } finally {
+          setIsPurchasing(null);
+      }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -28,12 +80,12 @@ export default function ProducerDashboard() {
         <div className="space-y-4">
           <div className="flex justify-between text-sm font-bold">
             <span className="text-slate-500">Verified Credits Purchased</span>
-            <span className="text-slate-900">3,240 / 5,000 kg</span>
+            <span className="text-slate-900">{profile ? profile.creditsPurchased : "..."} / 5,000 kg</span>
           </div>
           <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
             <div 
               className="h-full bg-gradient-to-r from-slate-700 to-slate-900 transition-all duration-1000" 
-              style={{ width: "64.8%" }} 
+              style={{ width: `${Math.min(100, (profile?.creditsPurchased || 0) / 5000 * 100)}%` }} 
             />
           </div>
         </div>
@@ -67,24 +119,32 @@ export default function ProducerDashboard() {
                         <Filter className="w-5 h-5 text-slate-400" />
                     </div>
                     <div className="divide-y divide-slate-100">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="p-6 flex items-center justify-between hover:bg-slate-50 transition">
+                        {isLoading ? (
+                            <div className="p-8 text-center text-slate-500">Loading marketplace...</div>
+                        ) : listings.length === 0 ? (
+                            <div className="p-8 text-center text-slate-500">No credits currently available.</div>
+                        ) : listings.map((listing) => (
+                            <div key={listing.id} className="p-6 flex items-center justify-between hover:bg-slate-50 transition">
                                 <div className="flex items-center space-x-6">
                                     <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200">
                                         <Shovel className="w-6 h-6 text-slate-600" />
                                     </div>
                                     <div>
                                         <div className="flex items-center space-x-2 mb-1">
-                                            <p className="text-lg font-bold text-slate-900">{500 * i} PRC Tokens</p>
+                                            <p className="text-lg font-bold text-slate-900">{listing.prcBalance} PRC Tokens</p>
                                             <ShieldCheck className="w-4 h-4 text-blue-500 fill-blue-50" />
                                         </div>
-                                        <p className="text-xs text-slate-400 font-medium">Verified Source: Recycler Node #{i + 4}</p>
+                                        <p className="text-xs text-slate-400 font-medium">Verified Source: {listing.businessName} ({listing.location})</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-lg font-bold text-slate-900">${(250 * i).toLocaleString()}</p>
-                                    <button className="mt-2 bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 transition">
-                                        Purchase
+                                    <p className="text-lg font-bold text-slate-900">₹{(listing.prcBalance * 0.50).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    <button 
+                                        onClick={() => handlePurchase(listing.userId, listing.prcBalance)}
+                                        disabled={isPurchasing !== null}
+                                        className="mt-2 bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 transition disabled:opacity-50"
+                                    >
+                                        {isPurchasing === listing.userId ? "Purchasing..." : "Purchase All"}
                                     </button>
                                 </div>
                             </div>

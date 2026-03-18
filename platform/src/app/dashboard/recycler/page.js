@@ -15,7 +15,7 @@ import {
   Check,
   Settings,
   Save,
-  DollarSign
+  IndianRupee
 } from "lucide-react";
 
 
@@ -193,6 +193,25 @@ export default function RecyclerDashboard() {
             </div>
             <div className="absolute top-0 right-0 p-8 opacity-10">
               <Coins className="w-20 h-20" />
+            </div>
+          </div>
+
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 shadow-sm relative overflow-hidden">
+            <div className="relative z-10">
+              <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-widest mb-4">Available to Sell</h3>
+              <p className="text-4xl font-bold flex items-baseline text-emerald-900">
+                {profile === null ? (
+                  <span className="text-emerald-500 animate-pulse text-2xl">Loading...</span>
+                ) : (
+                  <>
+                    {profile.prcBalance} <span className="text-xs ml-2 text-emerald-700">PRC</span>
+                  </>
+                )}
+              </p>
+              <div className="mt-6 flex items-center space-x-2 text-emerald-600 text-xs font-bold">
+                <IndianRupee className="w-4 h-4" />
+                <span>Ready for Marketplace</span>
+              </div>
             </div>
           </div>
 
