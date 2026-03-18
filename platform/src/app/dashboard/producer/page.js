@@ -2,18 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { ShoppingBag, Search, Shovel, ShieldCheck, MapPin, ExternalLink, Filter, Factory } from "lucide-react";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 export default function ProducerDashboard() {
   const [activeTab, setActiveTab] = useState("marketplace");
   const [profile, setProfile] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [listings, setListings] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = async (userId) => {
       setIsLoading(true);
       try {
-          const profRes = await fetch("/api/producer/profile");
+          const query = userId ? `?userId=${userId}` : "";
+          const profRes = await fetch(`/api/producer/profile${query}`);
           const profData = await profRes.json();
           if (profData.success) setProfile(profData.profile);
 
@@ -28,8 +31,10 @@ export default function ProducerDashboard() {
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (selectedUserId) {
+      fetchData(selectedUserId);
+    }
+  }, [selectedUserId]);
 
   const handlePurchase = async (recyclerId, amount) => {
       if (!profile) return;
@@ -47,7 +52,7 @@ export default function ProducerDashboard() {
           const data = await res.json();
           if (data.success) {
               alert("Purchase successful!");
-              fetchData();
+              fetchData(selectedUserId);
           } else {
               alert("Purchase failed: " + data.error);
           }
@@ -60,11 +65,12 @@ export default function ProducerDashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Compliance & Sourcing</h1>
           <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Producer Dashboard • ESG Token Marketplace</p>
         </div>
+        <ProfileSwitcher role="PRODUCER" onProfileChange={setSelectedUserId} />
       </div>
 
       {/* Obligation Tracker */}

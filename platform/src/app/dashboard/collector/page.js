@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Scale, Package, Send, CheckCircle2, ChevronRight, Hash, Radio, MapPin, Factory } from "lucide-react";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 export default function CollectorDashboard() {
   const router = useRouter();
   const [weight, setWeight] = useState("");
   const [plasticType, setPlasticType] = useState("PET");
+  const [selectedUserId, setSelectedUserId] = useState(null);
   
   // Location State
   const [stateName, setStateName] = useState("Tamil Nadu");
@@ -28,9 +30,10 @@ export default function CollectorDashboard() {
   const [logs, setLogs] = useState([]);
 
   // Fetch logs on load
-  const fetchLogs = async () => {
+  const fetchLogs = async (userId) => {
     try {
-      const res = await fetch("/api/logs/collector");
+      const url = userId ? `/api/logs/collector?userId=${userId}` : "/api/logs/collector";
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setLogs(data.logs);
@@ -41,8 +44,10 @@ export default function CollectorDashboard() {
   };
 
   useEffect(() => {
-    fetchLogs();
-  }, []);
+    if (selectedUserId) {
+      fetchLogs(selectedUserId);
+    }
+  }, [selectedUserId]);
 
   // Fetch recyclers when district changes
   useEffect(() => {
@@ -145,11 +150,12 @@ export default function CollectorDashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Marketplace Hub</h1>
           <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Collector Dashboard • Hedera HCS Gateway</p>
         </div>
+        <ProfileSwitcher role="COLLECTOR" onProfileChange={setSelectedUserId} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

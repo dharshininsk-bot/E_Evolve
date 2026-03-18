@@ -84,21 +84,42 @@ export async function POST(request) {
     }
 }
 
-export async function GET() {
+export async function GET(request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const userId = searchParams.get("userId");
+
         const accountId = process.env.HEDERA_ACCOUNT_ID || "0.0.8215683";
         const tokenId = process.env.HTS_TOKEN_ID || "0.0.8229487";
 
+        const whereClause = { status: "VERIFIED" };
+        if (userId) whereClause.recyclerId = userId;
+
         const logs = await prisma.wasteLog.findMany({
-            where: { status: "VERIFIED" },
+            where: whereClause,
             orderBy: { createdAt: 'desc' }
         });
+
+        // Calculate user-specific minted total from database
+        let userMintedTotal = 0;
+        if (userId) {
+            const mintedLogs = await prisma.wasteLog.findMany({
+                where: {
+                    recyclerId: userId,
+                    status: "MINTED"
+                },
+                select: { weight: true }
+            });
+            userMintedTotal = mintedLogs.reduce((sum, log) => sum + log.weight, 0);
+        }
 
         const tokenBalance = await getMirrorBalance(accountId, tokenId);
 
         return NextResponse.json({
+            success: true,
             logs: logs.length > 0 ? logs : [],
             tokenBalance,
+            userMintedTotal,
             tokenId
         });
     } catch (err) {

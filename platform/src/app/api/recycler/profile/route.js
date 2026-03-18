@@ -4,16 +4,29 @@ import prisma from "@/lib/prisma";
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    // For demo purposes, we fetch the first recycler
-    const profile = await prisma.recyclerProfile.findFirst({
-      include: {
-        user: {
-          select: { id: true, email: true }
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    let profile;
+    if (userId) {
+      profile = await prisma.recyclerProfile.findUnique({
+        where: { userId: userId },
+        include: {
+          user: { select: { id: true, email: true } }
         }
-      }
-    });
+      });
+    }
+
+    if (!profile) {
+      // For demo purposes, we fetch the first recycler
+      profile = await prisma.recyclerProfile.findFirst({
+        include: {
+          user: { select: { id: true, email: true } }
+        }
+      });
+    }
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
