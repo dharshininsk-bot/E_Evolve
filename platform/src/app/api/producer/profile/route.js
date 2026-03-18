@@ -5,16 +5,29 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(request) {
     try {
-        // For demo purposes, fetch the first producer
-        let profile = await prisma.user.findFirst({
-            where: { role: 'PRODUCER' },
-            select: { id: true, email: true, creditsPurchased: true }
-        });
+        const { searchParams } = new URL(request.url);
+        const userId = searchParams.get("userId");
+
+        let profile;
+        if (userId) {
+            profile = await prisma.user.findUnique({
+                where: { id: userId, role: 'PRODUCER' },
+                select: { id: true, email: true, creditsPurchased: true }
+            });
+        }
 
         if (!profile) {
-            // If no producer exists, create a dummy one for the demo
+            // For demo purposes, fetch the first producer if no specific ID or ID not found
+            profile = await prisma.user.findFirst({
+                where: { role: 'PRODUCER' },
+                select: { id: true, email: true, creditsPurchased: true }
+            });
+        }
+
+        if (!profile) {
+            // If still no producer exists, create a dummy one for the demo
             profile = await prisma.user.create({
                 data: {
                     email: "demo-producer@example.com",

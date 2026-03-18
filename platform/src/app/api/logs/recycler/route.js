@@ -7,19 +7,27 @@ export const revalidate = 0;
 
 export async function GET(request) {
   try {
-    // For demo purposes, find the first recycler
-    const recycler = await prisma.user.findFirst({
-      where: { role: "RECYCLER" }
-    });
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
 
-    if (!recycler) {
+    let recyclerId = userId;
+
+    if (!recyclerId) {
+      // For demo purposes, find the first recycler
+      const recycler = await prisma.user.findFirst({
+        where: { role: "RECYCLER" }
+      });
+      if (recycler) recyclerId = recycler.id;
+    }
+
+    if (!recyclerId) {
       return NextResponse.json({ success: true, logs: [] });
     }
 
     const logs = await prisma.wasteLog.findMany({
       where: {
         status: "REQUESTED",
-        recyclerId: recycler.id
+        recyclerId: recyclerId
       },
       orderBy: { createdAt: 'desc' },
       include: {

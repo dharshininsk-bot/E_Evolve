@@ -17,12 +17,15 @@ import {
   Save,
   IndianRupee
 } from "lucide-react";
+import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 
 export default function RecyclerDashboard() {
+  const [selectedUserId, setSelectedUserId] = useState(null);
   const [logs, setLogs] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [balance, setBalance] = useState(null); // null means 'Connecting...'
+  const [userMintedTotal, setUserMintedTotal] = useState(0);
   const [tokenId, setTokenId] = useState("0.0.8229487");
   const [isLoading, setIsLoading] = useState(true);
   const [isMinting, setIsMinting] = useState(null); // stores logId of log being minted
@@ -40,25 +43,28 @@ export default function RecyclerDashboard() {
   });
 
 
-  const fetchData = async () => {
+  const fetchData = async (userId) => {
     setIsLoading(true);
     try {
+      const query = userId ? `?userId=${userId}` : "";
+      
       // Fetch verified logs for minting
-      const htsResp = await fetch("/api/hedera/hts");
+      const htsResp = await fetch(`/api/hedera/hts${query}`);
       const htsData = await htsResp.json();
       if (htsData.logs) setLogs(htsData.logs);
       if (htsData.tokenBalance !== undefined) setBalance(htsData.tokenBalance?.toString());
+      if (htsData.userMintedTotal !== undefined) setUserMintedTotal(htsData.userMintedTotal);
       if (htsData.tokenId) setTokenId(htsData.tokenId);
 
       // Fetch incoming requests
-      const reqResp = await fetch("/api/logs/recycler");
+      const reqResp = await fetch(`/api/logs/recycler${query}`);
       const reqData = await reqResp.json();
       if (reqData.success && reqData.logs) {
         setIncomingRequests(reqData.logs);
       }
 
       // Fetch profile
-      const profResp = await fetch("/api/recycler/profile");
+      const profResp = await fetch(`/api/recycler/profile${query}`);
       const profData = await profResp.json();
       if (profData.success) {
         setProfile(profData.profile);
@@ -74,8 +80,10 @@ export default function RecyclerDashboard() {
 
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (selectedUserId) {
+      fetchData(selectedUserId);
+    }
+  }, [selectedUserId]);
 
   const handleMint = async (logId) => {
     setIsMinting(logId);
@@ -152,16 +160,17 @@ export default function RecyclerDashboard() {
   return (
 
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Recycler Dashboard</h1>
           <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Incoming Requests & Credit Minting</p>
         </div>
         <div className="flex items-center space-x-3">
+          <ProfileSwitcher role="RECYCLER" onProfileChange={setSelectedUserId} />
           <button 
             onClick={() => {
               setBalance(null);
-              fetchData();
+              fetchData(selectedUserId);
             }}
             className="flex items-center space-x-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
           >
@@ -178,17 +187,20 @@ export default function RecyclerDashboard() {
             <div className="relative z-10">
               <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Total Minted</h3>
               <p className="text-4xl font-bold flex items-baseline">
-                {balance === null ? (
-                  <span className="text-slate-500 animate-pulse text-2xl">Connecting...</span>
+                {isLoading ? (
+                  <span className="text-slate-500 animate-pulse text-2xl">Updating...</span>
                 ) : (
                   <>
-                    {balance} <span className="text-xs ml-2 text-slate-400">CREDITS</span>
+                    {userMintedTotal} <span className="text-xs ml-2 text-slate-400">CREDITS</span>
                   </>
                 )}
               </p>
-              <div className="mt-6 flex items-center space-x-2 text-green-400 text-xs font-bold">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>On-Chain Verified</span>
+              <div className="mt-6 flex items-center justify-between">
+                <div className="flex items-center space-x-2 text-green-400 text-xs font-bold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>On-Chain Verified</span>
+                </div>
+                <div className="text-[10px] text-slate-500 font-mono">Treasury: {balance || '0'}</div>
               </div>
             </div>
             <div className="absolute top-0 right-0 p-8 opacity-10">
