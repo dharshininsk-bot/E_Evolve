@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+<<<<<<< HEAD
 import { Droplet, Award, TrendingUp, CheckCircle2, Package, MapPin, Clock } from "lucide-react";
+=======
+import { Droplet, Award, TrendingUp, CheckCircle2, Package } from "lucide-react";
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
 import ProfileSwitcher from "@/components/ProfileSwitcher";
 
 export default function ConsumerDashboard() {
@@ -9,11 +13,14 @@ export default function ConsumerDashboard() {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
+<<<<<<< HEAD
   // Region and Collectors State
   const [region, setRegion] = useState("Chennai, Tamilnadu");
   const [collectors, setCollectors] = useState([]);
   const [isFetchingCollectors, setIsFetchingCollectors] = useState(false);
 
+=======
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   const fetchProfile = async (userId) => {
     setIsLoading(true);
     try {
@@ -36,6 +43,7 @@ export default function ConsumerDashboard() {
     }
   }, [selectedUserId]);
 
+<<<<<<< HEAD
   useEffect(() => {
     const fetchCollectors = async () => {
       setIsFetchingCollectors(true);
@@ -59,6 +67,8 @@ export default function ConsumerDashboard() {
     }
   }, [region]);
 
+=======
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   const stats = [
     { 
       label: "Plastic Diverted", 
@@ -68,8 +78,13 @@ export default function ConsumerDashboard() {
       bg: "bg-blue-100" 
     },
     { 
+<<<<<<< HEAD
       label: "Points Earned", 
       value: profile ? `${profile.stats.creditsEarned} Points` : "0 Points", 
+=======
+      label: "Credits Earned", 
+      value: profile ? `${profile.stats.creditsEarned} PRC` : "0 PRC", 
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
       icon: Award, 
       iconColor: "text-yellow-600", 
       bg: "bg-yellow-100" 
@@ -90,6 +105,7 @@ export default function ConsumerDashboard() {
     { type: "PP", name: "Caps & Straws", color: "bg-purple-500" },
   ];
 
+<<<<<<< HEAD
   const regions = [
     "Guindy",
     "Adyar",
@@ -110,6 +126,14 @@ export default function ConsumerDashboard() {
               <span className="font-mono text-sm bg-slate-100 text-slate-800 px-3 py-1 rounded border border-slate-200 shadow-sm">{profile.id}</span>
             </div>
           )}
+=======
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Your Impact</h1>
+          <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Individual Dashboard • Circular Reward System</p>
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
         </div>
         <ProfileSwitcher role="CONSUMER" onProfileChange={setSelectedUserId} />
       </div>
@@ -128,6 +152,7 @@ export default function ConsumerDashboard() {
         ))}
       </div>
 
+<<<<<<< HEAD
       {/* Find Collectors Section */}
       <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -192,6 +217,8 @@ export default function ConsumerDashboard() {
         </div>
       </div>
 
+=======
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Milestone Progress */}
         <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
@@ -241,6 +268,14 @@ export default function ConsumerDashboard() {
               </div>
             ))}
           </div>
+<<<<<<< HEAD
+=======
+          <div className="pt-2">
+            <button className="w-full py-3 bg-white text-slate-900 rounded-xl text-sm font-bold hover:bg-slate-200 transition">
+              Find Collection Point
+            </button>
+          </div>
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
         </div>
       </div>
     </div>

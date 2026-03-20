@@ -19,11 +19,15 @@ model User {
   recycledLogs     WasteLog[]         @relation("RecyclerWasteLogs")
   milestones       Milestone[]
   recyclerProfile  RecyclerProfile?
+<<<<<<< HEAD
   collectorProfile CollectorProfile?
+=======
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   purchases        CreditTransaction[] @relation("ProducerPurchases")
   sales            CreditTransaction[] @relation("RecyclerSales")
 }
 
+<<<<<<< HEAD
 model CollectorProfile {
   id             String   @id @default(cuid())
   userId         String   @unique
@@ -35,6 +39,8 @@ model CollectorProfile {
   updatedAt      DateTime @updatedAt
 }
 
+=======
+>>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
 model RecyclerProfile {
   id           String   @id @default(cuid())
   userId       String   @unique
