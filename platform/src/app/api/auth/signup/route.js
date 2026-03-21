@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request) {
   try {
-    const { email, password, role } = await request.json();
+    const { email, password, role, businessName, location } = await request.json();
 
     if (!email || !password || !role) {
       return NextResponse.json({ error: "Email, password and role are required" }, { status: 400 });
@@ -34,8 +34,8 @@ export async function POST(request) {
         await prisma.recyclerProfile.create({
             data: {
                 userId: user.id,
-                businessName: `${role.charAt(0) + role.slice(1).toLowerCase()} Business`,
-                location: "Unknown",
+                businessName: businessName || `${role.charAt(0) + role.slice(1).toLowerCase()} Business`,
+                location: location || "Unknown",
                 rates: JSON.stringify({ PET: 10, HDPE: 12, LDPE: 8, PP: 6 })
             }
         });

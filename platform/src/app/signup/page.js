@@ -15,6 +15,8 @@ export default function SignupPage() {
   const [selectedRole, setSelectedRole] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -28,7 +30,13 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role: selectedRole }),
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          role: selectedRole,
+          businessName: selectedRole === 'RECYCLER' ? businessName : undefined,
+          location: selectedRole === 'RECYCLER' ? location : undefined
+        }),
       });
 
       const data = await res.json();
@@ -141,6 +149,46 @@ export default function SignupPage() {
                     />
                   </div>
                 </div>
+
+                {selectedRole === 'RECYCLER' && (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300 ml-1">Business Name</label>
+                        <div className="relative group">
+                            <Factory className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                            type="text"
+                            required
+                            value={businessName}
+                            onChange={(e) => setBusinessName(e.target.value)}
+                            placeholder="e.g. EcoRecycle Solutions"
+                            className="w-full bg-white border border-slate-300 rounded-xl py-3 pl-12 pr-4 text-black placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-slate-300 ml-1">Operation Area (District)</label>
+                        <div className="relative group">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <select
+                            required
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            className="w-full bg-white border border-slate-300 rounded-xl py-3 pl-12 pr-4 text-black focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all font-medium appearance-none"
+                            >
+                                <option value="" disabled>Select your district</option>
+                                <option value="Adyar">Adyar</option>
+                                <option value="Guindy">Guindy</option>
+                                <option value="Velachery">Velachery</option>
+                                <option value="Tambaram">Tambaram</option>
+                                <option value="Teynampet">Teynampet</option>
+                            </select>
+                        </div>
+                        <p className="text-[10px] text-slate-500 ml-1 italic">* This is where collectors will find you</p>
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="submit"
