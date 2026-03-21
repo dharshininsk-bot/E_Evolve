@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Mail, Lock, Loader2, ArrowRight, ArrowLeft, Leaf, Truck, Recycle, Factory } from "lucide-react";
+import { UserPlus, Mail, Lock, Loader2, ArrowRight, ArrowLeft, Leaf, Truck, Recycle, Factory, MapPin } from "lucide-react";
 
 const roles = [
   { id: "CONSUMER", title: "Consumer", desc: "Track your personal plastic impact and earn rewards.", icon: Leaf, color: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20" },
