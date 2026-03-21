@@ -2,18 +2,33 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-<<<<<<< HEAD
-import { Trash2, Scale, Package, Send, CheckCircle2, ChevronRight, Hash, Radio, MapPin, Factory, UserPlus } from "lucide-react";
-=======
-import { Trash2, Scale, Package, Send, CheckCircle2, ChevronRight, Hash, Radio, MapPin, Factory } from "lucide-react";
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
-import ProfileSwitcher from "@/components/ProfileSwitcher";
+import { Trash2, Scale, Package, Send, CheckCircle2, ChevronRight, Hash, Radio, MapPin, Factory, UserPlus, User as UserIcon, LogOut } from "lucide-react";
+
 
 export default function CollectorDashboard() {
   const router = useRouter();
-<<<<<<< HEAD
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("collect"); // "collect" | "request"
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+    const parsedUser = JSON.parse(storedUser);
+    if (parsedUser.role !== "COLLECTOR") {
+      router.push(`/dashboard/${parsedUser.role.toLowerCase()}`);
+      return;
+    }
+    setUser(parsedUser);
+    fetchLogs(parsedUser.id);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
   
   // Consumer Collection State
   const [consumerId, setConsumerId] = useState("");
@@ -27,18 +42,7 @@ export default function CollectorDashboard() {
   const [stateName, setStateName] = useState("Tamil Nadu");
   const [district, setDistrict] = useState("");
   const [pincode, setPincode] = useState("");
-=======
-  const [weight, setWeight] = useState("");
-  const [plasticType, setPlasticType] = useState("PET");
-  const [selectedUserId, setSelectedUserId] = useState(null);
-  
-  // Location State
-  const [stateName, setStateName] = useState("Tamil Nadu");
-  const [district, setDistrict] = useState("");
-  const [pincode, setPincode] = useState("");
-  
-  // Recycler State
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+
   const [recyclers, setRecyclers] = useState([]);
   const [selectedRecycler, setSelectedRecycler] = useState("");
   
@@ -51,13 +55,10 @@ export default function CollectorDashboard() {
   // Logs Feed State
   const [logs, setLogs] = useState([]);
 
-<<<<<<< HEAD
-=======
-  // Fetch logs on load
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+
   const fetchLogs = async (userId) => {
     try {
-      const url = userId ? `/api/logs/collector?userId=${userId}` : "/api/logs/collector";
+      const url = `/api/logs/collector?userId=${userId}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -68,16 +69,7 @@ export default function CollectorDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (selectedUserId) {
-      fetchLogs(selectedUserId);
-    }
-  }, [selectedUserId]);
 
-<<<<<<< HEAD
-=======
-  // Fetch recyclers when district changes
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   useEffect(() => {
     const fetchRecyclers = async () => {
       if (district) {
@@ -103,7 +95,6 @@ export default function CollectorDashboard() {
     fetchRecyclers();
   }, [stateName, district]);
 
-<<<<<<< HEAD
   const handleCollectFromConsumer = async (e) => {
     e.preventDefault();
     setIsCollecting(true);
@@ -117,7 +108,7 @@ export default function CollectorDashboard() {
           consumerId,
           weight: collectWeight,
           plasticType: collectPlasticType,
-          collectorId: selectedUserId
+          collectorId: user.id
         }),
       });
 
@@ -126,7 +117,7 @@ export default function CollectorDashboard() {
         setConsumerId("");
         setCollectWeight("");
         alert(`Success! 10 points per kg (${parseFloat(collectWeight)*10} total points) credited to the consumer.`);
-        fetchLogs(selectedUserId); 
+        fetchLogs(user.id); 
       } else {
         alert("Failed to log collection: " + (data.error || "Unknown error"));
       }
@@ -138,8 +129,6 @@ export default function CollectorDashboard() {
     }
   };
 
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   const handleRequestPickup = async (e) => {
     e.preventDefault();
     if (!selectedRecycler) {
@@ -159,18 +148,15 @@ export default function CollectorDashboard() {
           state: stateName,
           district,
           pincode,
-          recyclerId: selectedRecycler
+          recyclerId: selectedRecycler,
+          collectorId: user.id
         }),
       });
 
       const data = await response.json();
       if (data.success) {
         setWeight("");
-<<<<<<< HEAD
-        fetchLogs(selectedUserId);
-=======
-        fetchLogs(); // Reload logs
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+        fetchLogs(user.id);
       } else {
         alert("Failed to request pickup: " + (data.error || "Unknown error"));
       }
@@ -203,11 +189,8 @@ export default function CollectorDashboard() {
           weight: logs.find(l => l.id === logId)?.weight,
           type: logs.find(l => l.id === logId)?.plasticType,
         });
-<<<<<<< HEAD
-        fetchLogs(selectedUserId); 
-=======
-        fetchLogs(); 
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+        fetchLogs(user.id); 
+
         router.refresh(); 
       } else {
         alert("Failed to sync to ledger: " + (data.error || "Unknown error"));
@@ -228,14 +211,32 @@ export default function CollectorDashboard() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Marketplace Hub</h1>
           <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Collector Dashboard • Hedera HCS Gateway</p>
         </div>
-        <ProfileSwitcher role="COLLECTOR" onProfileChange={setSelectedUserId} />
+        
+        {user && (
+          <div className="flex items-center gap-4 bg-white/50 backdrop-blur-sm p-2 pr-4 rounded-2xl border border-slate-200/60 shadow-sm animate-in slide-in-from-right-4 duration-500">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <UserIcon className="w-5 h-5 flex-shrink-0" />
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-xs font-bold text-slate-400 leading-none mb-1 uppercase tracking-tighter">Authenticated As</p>
+              <p className="text-sm font-bold text-slate-800 leading-none">{user.email}</p>
+            </div>
+            <div className="w-px h-8 bg-slate-200 mx-2 hidden sm:block"></div>
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all group"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Form Section */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-<<<<<<< HEAD
             <div className="flex border-b border-slate-200 bg-slate-50">
               <button 
                 onClick={() => setActiveTab("collect")}
@@ -272,7 +273,7 @@ export default function CollectorDashboard() {
                       value={consumerId}
                       onChange={(e) => setConsumerId(e.target.value)}
                       placeholder="e.g. clabc123..."
-                      className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-mono disabled:bg-slate-50 disabled:text-slate-400"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-mono text-black placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
                     />
                   </div>
 
@@ -290,7 +291,7 @@ export default function CollectorDashboard() {
                         value={collectWeight}
                         onChange={(e) => setCollectWeight(e.target.value)}
                         placeholder="e.g. 5.0"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-medium disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-medium text-black placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
                       />
                     </div>
 
@@ -303,7 +304,7 @@ export default function CollectorDashboard() {
                         value={collectPlasticType}
                         disabled={isCollecting}
                         onChange={(e) => setCollectPlasticType(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none bg-white text-lg disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none bg-white text-lg text-black disabled:bg-slate-50 disabled:text-slate-400"
                       >
                         <option value="PET">PET (Bottles)</option>
                         <option value="HDPE">HDPE (Milk Jugs)</option>
@@ -354,7 +355,7 @@ export default function CollectorDashboard() {
                         value={weight}
                         onChange={(e) => setWeight(e.target.value)}
                         placeholder="e.g. 15.0"
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-medium disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-medium text-black placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
                       />
                     </div>
 
@@ -367,7 +368,7 @@ export default function CollectorDashboard() {
                         value={plasticType}
                         disabled={isRequesting}
                         onChange={(e) => setPlasticType(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none bg-white text-lg disabled:bg-slate-50 disabled:text-slate-400"
+                        className="w-full px-4 py-3 rounded-xl border border-slate-400 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none bg-white text-lg text-black disabled:bg-slate-50 disabled:text-slate-400"
                       >
                         <option value="PET">PET (Bottles)</option>
                         <option value="HDPE">HDPE (Milk Jugs)</option>
@@ -390,7 +391,7 @@ export default function CollectorDashboard() {
                                 value={stateName} 
                                 onChange={(e) => setStateName(e.target.value)}
                                 disabled={isRequesting}
-                                className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm"
+                                className="w-full px-4 py-2 rounded-xl border border-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm text-black"
                             >
                                 <option value="Tamil Nadu">Tamil Nadu</option>
                             </select>
@@ -402,7 +403,7 @@ export default function CollectorDashboard() {
                                 onChange={(e) => setDistrict(e.target.value)}
                                 required
                                 disabled={isRequesting}
-                                className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm"
+                                className="w-full px-4 py-2 rounded-xl border border-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm text-black"
                             >
                                 <option value="" disabled>Select Area</option>
                                 <option value="Adyar">Adyar</option>
@@ -419,7 +420,7 @@ export default function CollectorDashboard() {
                                 onChange={(e) => setPincode(e.target.value)}
                                 disabled={isRequesting}
                                 placeholder="e.g. 600020"
-                                className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm"
+                                className="w-full px-4 py-2 rounded-xl border border-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm text-black placeholder:text-slate-400"
                             />
                         </div>
                     </div>
@@ -488,166 +489,7 @@ export default function CollectorDashboard() {
                   </button>
                 </form>
             )}
-=======
-            <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center space-x-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Trash2 className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-800">Request Pickup</h3>
-                <p className="text-xs text-slate-500 font-medium">Match with local recyclers for best rates</p>
-              </div>
-            </div>
 
-            <form onSubmit={handleRequestPickup} className="p-8 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-slate-100 pb-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                    <Scale className="w-4 h-4" />
-                    <span>Weight (kg)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    required
-                    disabled={isRequesting}
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    placeholder="e.g. 15.0"
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none text-lg font-medium disabled:bg-slate-50 disabled:text-slate-400"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                    <Package className="w-4 h-4" />
-                    <span>Plastic Type</span>
-                  </label>
-                  <select
-                    value={plasticType}
-                    disabled={isRequesting}
-                    onChange={(e) => setPlasticType(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition outline-none bg-white text-lg disabled:bg-slate-50 disabled:text-slate-400"
-                  >
-                    <option value="PET">PET (Bottles)</option>
-                    <option value="HDPE">HDPE (Milk Jugs)</option>
-                    <option value="LDPE">LDPE (Bags)</option>
-                    <option value="PP">PP (Caps/Straws)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Location Picker */}
-              <div className="space-y-4 pt-2">
-                <h4 className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>Pickup Location</span>
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500">State</label>
-                        <select 
-                            value={stateName} 
-                            onChange={(e) => setStateName(e.target.value)}
-                            disabled={isRequesting}
-                            className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm"
-                        >
-                            <option value="Tamil Nadu">Tamil Nadu</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500">District / Area</label>
-                        <select 
-                            value={district} 
-                            onChange={(e) => setDistrict(e.target.value)}
-                            required
-                            disabled={isRequesting}
-                            className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none bg-white text-sm"
-                        >
-                            <option value="" disabled>Select Area</option>
-                            <option value="Adyar">Adyar</option>
-                            <option value="Guindy">Guindy</option>
-                            <option value="Velachery">Velachery</option>
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-xs font-semibold text-slate-500">Pincode</label>
-                        <input
-                            type="text"
-                            required
-                            value={pincode}
-                            onChange={(e) => setPincode(e.target.value)}
-                            disabled={isRequesting}
-                            placeholder="e.g. 600020"
-                            className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none text-sm"
-                        />
-                    </div>
-                </div>
-              </div>
-
-              {/* Recycler Matcher */}
-              {district && (
-                <div className="mt-6 p-6 bg-slate-50 border border-slate-200 rounded-xl space-y-4">
-                    <h4 className="text-sm font-bold text-slate-700 flex items-center space-x-2">
-                        <Factory className="w-4 h-4 text-blue-600" />
-                        <span>Available Recyclers Nearby</span>
-                    </h4>
-                    {recyclers.length === 0 ? (
-                        <p className="text-sm text-slate-500 italic">No registered recyclers found in {district}.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            {recyclers.map(r => {
-                                const rates = r.rates ? JSON.parse(r.rates) : {};
-                                const rateForType = rates[plasticType];
-                                return (
-                                    <label key={r.id} className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition ${selectedRecycler === r.user.id ? 'border-blue-500 bg-blue-50/50' : 'border-slate-300 bg-white hover:border-slate-400'}`}>
-                                        <div className="flex items-center space-x-3">
-                                            <input 
-                                                type="radio" 
-                                                name="recycler" 
-                                                value={r.user.id} 
-                                                checked={selectedRecycler === r.user.id}
-                                                onChange={() => setSelectedRecycler(r.user.id)}
-                                                className="w-4 h-4 text-blue-600"
-                                            />
-                                            <div>
-                                                <div className="font-bold text-slate-800">{r.businessName}</div>
-                                                <div className="text-xs text-slate-500">{r.location}</div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-bold text-emerald-600">
-                                                {rateForType ? `₹${rateForType}/kg` : 'Rate TBD'}
-                                            </div>
-                                            <div className="text-[10px] text-slate-400 font-bold uppercase">For {plasticType}</div>
-                                        </div>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isRequesting || recyclers.length === 0}
-                className="w-full bg-slate-900 text-white rounded-xl py-4 flex items-center justify-center space-x-3 hover:bg-slate-800 transition active:scale-[0.98] disabled:opacity-50 font-bold text-lg mt-6"
-              >
-                {isRequesting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Requesting Pickup...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    <span>Request Pickup</span>
-                  </>
-                )}
-              </button>
-            </form>
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
           </div>
         </div>
 
@@ -670,12 +512,10 @@ export default function CollectorDashboard() {
                                     {log.recycler?.recyclerProfile && (
                                         <div className="text-xs text-slate-500 mt-1">To: {log.recycler.recyclerProfile.businessName}</div>
                                     )}
-<<<<<<< HEAD
                                     {log.consumer && (
                                         <div className="text-xs text-slate-500 mt-1">From: Consumer {log.consumer.id.substring(0,8)}...</div>
                                     )}
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+
                                 </div>
                                 <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
                                     ${log.status === 'REQUESTED' ? 'bg-yellow-100 text-yellow-700' : 
@@ -762,7 +602,4 @@ export default function CollectorDashboard() {
     </div>
   );
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed

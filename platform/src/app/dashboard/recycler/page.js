@@ -15,13 +15,17 @@ import {
   Check,
   Settings,
   Save,
-  IndianRupee
+  IndianRupee,
+  LogOut,
+  User as UserIcon
 } from "lucide-react";
-import ProfileSwitcher from "@/components/ProfileSwitcher";
+import { useRouter } from "next/navigation";
 
 
 export default function RecyclerDashboard() {
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
+
   const [logs, setLogs] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [balance, setBalance] = useState(null); // null means 'Connecting...'
@@ -42,6 +46,25 @@ export default function RecyclerDashboard() {
     PP: ""
   });
 
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+    const parsedUser = JSON.parse(storedUser);
+    if (parsedUser.role !== "RECYCLER") {
+      router.push(`/dashboard/${parsedUser.role.toLowerCase()}`);
+      return;
+    }
+    setUser(parsedUser);
+    fetchData(parsedUser.id);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
 
   const fetchData = async (userId) => {
     setIsLoading(true);
@@ -78,13 +101,6 @@ export default function RecyclerDashboard() {
     }
   };
 
-
-  useEffect(() => {
-    if (selectedUserId) {
-      fetchData(selectedUserId);
-    }
-  }, [selectedUserId]);
-
   const handleMint = async (logId) => {
     setIsMinting(logId);
     try {
@@ -97,7 +113,7 @@ export default function RecyclerDashboard() {
       
       if (result.success) {
         setLogs(prev => prev.filter(l => l.id !== logId));
-        fetchData(); 
+        if (user) fetchData(user.id); 
         alert(`Successfully minted ${result.mintedAmount} Recycling Credits!`);
       } else {
         alert("Minting failed: " + (result.error || "Unknown error"));
@@ -121,7 +137,6 @@ export default function RecyclerDashboard() {
 
       if (result.success) {
         setIncomingRequests(prev => prev.filter(req => req.id !== logId));
-        // We don't need to move it to the minting queue here, as it first needs Collector HCS sync
       } else {
         alert("Failed to accept request: " + (result.error || "Unknown error"));
       }
@@ -133,12 +148,14 @@ export default function RecyclerDashboard() {
   };
 
   const handleSaveProfile = async () => {
+    if (!user) return;
     setIsSavingProfile(true);
     try {
       const resp = await fetch("/api/recycler/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user.id,
           location: editLocation,
           rates: editRates
         })
@@ -158,26 +175,43 @@ export default function RecyclerDashboard() {
   };
 
   return (
-
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Recycler Dashboard</h1>
           <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Incoming Requests & Credit Minting</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <ProfileSwitcher role="RECYCLER" onProfileChange={setSelectedUserId} />
-          <button 
-            onClick={() => {
-              setBalance(null);
-              fetchData(selectedUserId);
-            }}
-            className="flex items-center space-x-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span>Refresh Dashboard</span>
-          </button>
-        </div>
+        
+        {user && (
+          <div className="flex items-center gap-4 bg-white/50 backdrop-blur-sm p-2 pr-4 rounded-2xl border border-slate-200/60 shadow-sm animate-in slide-in-from-right-4 duration-500">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <UserIcon className="w-5 h-5 flex-shrink-0" />
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-xs font-bold text-slate-400 leading-none mb-1 uppercase tracking-tighter">Authenticated As</p>
+              <p className="text-sm font-bold text-slate-800 leading-none">{user.email}</p>
+            </div>
+            <div className="w-px h-8 bg-slate-200 mx-2 hidden sm:block"></div>
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all group"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+        )}
+
+        <button 
+          onClick={() => {
+            setBalance(null);
+            if (user) fetchData(user.id);
+          }}
+          className="flex items-center space-x-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-900/10"
+        >
+          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <span>Refresh Dashboard</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -245,7 +279,6 @@ export default function RecyclerDashboard() {
             </div>
           </div>
 
-          {/* Settings / Profile Management */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden animate-in slide-in-from-left duration-500">
             <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center space-x-3">
               <Settings className="w-5 h-5 text-slate-600" />
@@ -258,7 +291,7 @@ export default function RecyclerDashboard() {
                 <select 
                   value={editLocation}
                   onChange={(e) => setEditLocation(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+                  className="w-full px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm font-bold text-black focus:ring-2 focus:ring-blue-500/20 outline-none"
                 >
                   <option value="Adyar">Adyar</option>
                   <option value="Guindy">Guindy</option>
@@ -280,7 +313,7 @@ export default function RecyclerDashboard() {
                           type="number"
                           value={editRates[type]}
                           onChange={(e) => setEditRates(prev => ({ ...prev, [type]: parseFloat(e.target.value) || 0 }))}
-                          className="w-full pl-7 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500/20 outline-none"
+                          className="w-full pl-7 pr-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-black focus:ring-2 focus:ring-blue-500/20 outline-none"
                         />
                       </div>
                     </div>
@@ -305,10 +338,8 @@ export default function RecyclerDashboard() {
         </div>
 
 
-        {/* Main Lists Column */}
         <div className="lg:col-span-3 space-y-8">
 
-          {/* Incoming Requests Section */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="bg-blue-50 border-b border-blue-100 px-8 py-6 flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -350,7 +381,7 @@ export default function RecyclerDashboard() {
                              </div>
                              <div className="w-1 h-1 bg-slate-300 rounded-full"></div>
                              <div>
-                               From: {req.collector?.email || 'Unknown Collector'}
+                                From: {req.collector?.email || 'Unknown Collector'}
                              </div>
                         </div>
                       </div>
@@ -374,7 +405,6 @@ export default function RecyclerDashboard() {
             </div>
           </div>
 
-          {/* Minting Queue Section */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="bg-slate-50 border-b border-slate-200 px-8 py-6 flex items-center justify-between">
               <div className="flex items-center space-x-3">

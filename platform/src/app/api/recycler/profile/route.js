@@ -9,27 +9,26 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get("userId");
 
-    let profile;
-    if (userId) {
-      profile = await prisma.recyclerProfile.findUnique({
-        where: { userId: userId },
-        include: {
-          user: { select: { id: true, email: true } }
-        }
-      });
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    if (!profile) {
-      // For demo purposes, we fetch the first recycler
-      profile = await prisma.recyclerProfile.findFirst({
-        include: {
-          user: { select: { id: true, email: true } }
-        }
-      });
-    }
+    const profile = await prisma.recyclerProfile.findUnique({
+      where: { userId: userId },
+      include: {
+        user: { select: { id: true, email: true } }
+      }
+    });
 
     if (!profile) {
-      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+      return NextResponse.json({ 
+        success: true, 
+        profile: {
+          location: "Unknown",
+          rates: JSON.stringify({ PET: 10, HDPE: 12, LDPE: 8, PP: 6 }),
+          prcBalance: 0
+        } 
+      });
     }
 
     return NextResponse.json({ success: true, profile });
@@ -40,19 +39,24 @@ export async function GET(request) {
 
 export async function PUT(request) {
   try {
-    const { location, rates } = await request.json();
+    const { userId, location, rates } = await request.json();
 
-    // For demo, find the first profile
-    const profile = await prisma.recyclerProfile.findFirst();
-    if (!profile) {
-        return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    if (!userId) {
+      return NextResponse.json({ error: "userId is required" }, { status: 400 });
     }
 
-    const updatedProfile = await prisma.recyclerProfile.update({
-      where: { id: profile.id },
-      data: {
+    const updatedProfile = await prisma.recyclerProfile.upsert({
+      where: { userId: userId },
+      update: {
         location,
         rates: JSON.stringify(rates)
+      },
+      create: {
+        userId,
+        location,
+        rates: JSON.stringify(rates),
+        businessName: "Recycler Business",
+        prcBalance: 0
       }
     });
 

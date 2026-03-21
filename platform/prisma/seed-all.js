@@ -1,7 +1,6 @@
 const { PrismaClient } = require('@prisma/client')
 
 async function main() {
-  process.env.DATABASE_URL = "file:e:/Academics/EEvolve/E_Evolve/platform/prisma/dev.db";
   const prisma = new PrismaClient()
   console.log('Cleaning up existing data...')
   // Order matters due to foreign keys
@@ -9,6 +8,7 @@ async function main() {
   await prisma.milestone.deleteMany({})
   await prisma.wasteLog.deleteMany({})
   await prisma.recyclerProfile.deleteMany({})
+  await prisma.collectorProfile.deleteMany({})
   await prisma.user.deleteMany({})
 
   console.log('Seeding Users...')
@@ -19,6 +19,7 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: `consumer${i}@evolve.com`,
+        password: 'password123',
         role: 'CONSUMER'
       }
     })
@@ -32,6 +33,7 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: `collector${i}@evolve.com`,
+        password: 'password123',
         role: 'COLLECTOR'
       }
     })
@@ -50,6 +52,7 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: r.email,
+        password: 'password123',
         role: 'RECYCLER'
       }
     })
@@ -72,6 +75,7 @@ async function main() {
     const user = await prisma.user.create({
       data: {
         email: `producer${i}@evolve.com`,
+        password: 'password123',
         role: 'PRODUCER',
         creditsPurchased: 100 * i // Different progress for each
       }

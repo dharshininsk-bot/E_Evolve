@@ -1,24 +1,9 @@
-
-Invalid `prisma.user.upsert()` invocation in
-D:\E_Evolve-main\platform\test_prisma_direct.js:7:44
-
-  4 
-  5 async function main() {
-  6     try {
-→ 7         const consumer = await prisma.user.upsert(
-Error querying the database: Error code 14: Unable to open the database file
-
-PrismaClientInitializationError: 
-Invalid `prisma.user.upsert()` invocation in
-D:\E_Evolve-main\platform\test_prisma_direct.js:7:44
-
-  4 
-  5 async function main() {
-  6     try {
-→ 7         const consumer = await prisma.user.upsert(
-Error querying the database: Error code 14: Unable to open the database file
-    at $n.handleRequestError (D:\E_Evolve-main\platform\node_modules\@prisma\client\runtime\library.js:121:7615)
-    at $n.handleAndLogRequestError (D:\E_Evolve-main\platform\node_modules\@prisma\client\runtime\library.js:121:6623)
-    at $n.request (D:\E_Evolve-main\platform\node_modules\@prisma\client\runtime\library.js:121:6307)
-    at async l (D:\E_Evolve-main\platform\node_modules\@prisma\client\runtime\library.js:130:9633)
-    at async main (D:\E_Evolve-main\platform\test_prisma_direct.js:7:26)
+{
+  "id": "cmn04b1520000l9404246m4nl",
+  "email": "demo.consumer@evolve.com",
+  "password": "password123",
+  "role": "CONSUMER",
+  "creditsPurchased": 0,
+  "createdAt": "2026-03-21T09:20:36.998Z",
+  "updatedAt": "2026-03-21T09:20:36.998Z"
+}

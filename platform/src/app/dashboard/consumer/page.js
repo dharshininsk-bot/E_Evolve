@@ -1,30 +1,44 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
-import { Droplet, Award, TrendingUp, CheckCircle2, Package, MapPin, Clock } from "lucide-react";
-=======
-import { Droplet, Award, TrendingUp, CheckCircle2, Package } from "lucide-react";
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
-import ProfileSwitcher from "@/components/ProfileSwitcher";
+import { Droplet, Award, TrendingUp, CheckCircle2, Package, MapPin, Clock, LogOut, User as UserIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function ConsumerDashboard() {
   const [profile, setProfile] = useState(null);
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
-<<<<<<< HEAD
   // Region and Collectors State
-  const [region, setRegion] = useState("Chennai, Tamilnadu");
+  const [region, setRegion] = useState("Guindy");
   const [collectors, setCollectors] = useState([]);
   const [isFetchingCollectors, setIsFetchingCollectors] = useState(false);
 
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) {
+      router.push("/login");
+      return;
+    }
+    const parsedUser = JSON.parse(storedUser);
+    if (parsedUser.role !== "CONSUMER") {
+      router.push(`/dashboard/${parsedUser.role.toLowerCase()}`);
+      return;
+    }
+    setUser(parsedUser);
+    fetchProfile(parsedUser.id);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
+
   const fetchProfile = async (userId) => {
     setIsLoading(true);
     try {
-      const url = userId ? `/api/consumer/profile?userId=${userId}` : "/api/consumer/profile";
+      const url = `/api/consumer/profile?userId=${userId}`;
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
@@ -37,13 +51,6 @@ export default function ConsumerDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (selectedUserId) {
-      fetchProfile(selectedUserId);
-    }
-  }, [selectedUserId]);
-
-<<<<<<< HEAD
   useEffect(() => {
     const fetchCollectors = async () => {
       setIsFetchingCollectors(true);
@@ -66,9 +73,6 @@ export default function ConsumerDashboard() {
       fetchCollectors();
     }
   }, [region]);
-
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   const stats = [
     { 
       label: "Plastic Diverted", 
@@ -78,13 +82,9 @@ export default function ConsumerDashboard() {
       bg: "bg-blue-100" 
     },
     { 
-<<<<<<< HEAD
       label: "Points Earned", 
       value: profile ? `${profile.stats.creditsEarned} Points` : "0 Points", 
-=======
-      label: "Credits Earned", 
-      value: profile ? `${profile.stats.creditsEarned} PRC` : "0 PRC", 
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+
       icon: Award, 
       iconColor: "text-yellow-600", 
       bg: "bg-yellow-100" 
@@ -105,15 +105,6 @@ export default function ConsumerDashboard() {
     { type: "PP", name: "Caps & Straws", color: "bg-purple-500" },
   ];
 
-<<<<<<< HEAD
-  const regions = [
-    "Guindy",
-    "Adyar",
-    "Velachery",
-    "Tambaram"
-  ];
-
-
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -126,16 +117,28 @@ export default function ConsumerDashboard() {
               <span className="font-mono text-sm bg-slate-100 text-slate-800 px-3 py-1 rounded border border-slate-200 shadow-sm">{profile.id}</span>
             </div>
           )}
-=======
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Your Impact</h1>
-          <p className="text-slate-500 mt-1 uppercase tracking-wider text-xs font-semibold">Individual Dashboard • Circular Reward System</p>
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+
         </div>
-        <ProfileSwitcher role="CONSUMER" onProfileChange={setSelectedUserId} />
+        
+        {user && (
+          <div className="flex items-center gap-4 bg-white/50 backdrop-blur-sm p-2 pr-4 rounded-2xl border border-slate-200/60 shadow-sm animate-in slide-in-from-right-4 duration-500">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
+              <UserIcon className="w-5 h-5" />
+            </div>
+            <div className="hidden sm:block">
+              <p className="text-xs font-bold text-slate-400 leading-none mb-1 uppercase tracking-tighter">Authenticated As</p>
+              <p className="text-sm font-bold text-slate-800 leading-none">{user.email}</p>
+            </div>
+            <div className="w-px h-8 bg-slate-200 mx-2 hidden sm:block"></div>
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all group"
+              title="Logout"
+            >
+              <LogOut className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -152,7 +155,6 @@ export default function ConsumerDashboard() {
         ))}
       </div>
 
-<<<<<<< HEAD
       {/* Find Collectors Section */}
       <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
@@ -168,9 +170,9 @@ export default function ConsumerDashboard() {
             <select
               value={region}
               onChange={(e) => setRegion(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              className="w-full px-4 py-2 bg-white border border-slate-300 rounded-xl text-sm font-bold text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
             >
-              {regions.map((r) => (
+              {[ "Guindy", "Adyar", "Velachery", "Tambaram"].map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
             </select>
@@ -217,40 +219,50 @@ export default function ConsumerDashboard() {
         </div>
       </div>
 
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Milestone Progress */}
         <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm space-y-6">
           <div className="flex justify-between items-center">
             <h3 className="text-xl font-bold text-slate-800">Recycling Milestone</h3>
             <span className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1 rounded-full">
-                {profile?.stats.plasticDiverted >= 10 ? "Eco Master" : "Level 1 Hero"}
+                {profile?.milestones && profile.milestones.length > 0 ? `Level ${profile.milestones.length} Hero` : "Getting Started"}
             </span>
           </div>
           
           <div className="space-y-4">
             <div className="flex justify-between text-sm font-bold">
-              <span className="text-slate-500 underline decoration-blue-500/30">Next Reward: Eco-Coupon</span>
-              <span className="text-slate-900">{profile ? profile.stats.plasticDiverted.toFixed(1) : "0.0"} / 10 kg</span>
+              <span className="text-slate-500 underline decoration-blue-500/30">
+                Next Target: {(profile?.milestones?.length || 0) * 10 + 10}kg
+              </span>
+              <span className="text-slate-900">{profile ? profile.stats.plasticDiverted.toFixed(1) : "0.0"} / {(profile?.milestones?.length || 0) * 10 + 10} kg</span>
             </div>
             <div className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
               <div 
                 className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-1000" 
-                style={{ width: `${Math.min(100, (profile?.stats.plasticDiverted || 0) / 10 * 100)}%` }} 
+                style={{ width: `${Math.min(100, (profile?.stats.plasticDiverted || 0) / ((profile?.milestones?.length || 0) * 10 + 10) * 100)}%` }} 
               />
             </div>
           </div>
 
-          <div className="bg-slate-50 rounded-xl p-4 flex items-start space-x-3 border border-slate-200">
-            <Award className="w-5 h-5 text-yellow-600 flex-shrink-0" />
-            <p className="text-xs text-slate-600 font-medium leading-relaxed">
-              {profile?.stats.plasticDiverted >= 10 ? (
-                  <>Congratulations! You've unlocked the <span className="text-slate-900 font-bold font-mono">EVOLVE-SAVE-20</span> discount code.</>
-              ) : (
-                  <>Reach 10kg to unlock a unique <span className="text-slate-900 font-bold font-mono">EVOLVE-SAVE-20</span> discount code for use with our Producer partners.</>
-              )}
-            </p>
+          <div className="bg-slate-50 rounded-xl p-4 flex flex-col space-y-3 border border-slate-200">
+            <div className="flex items-center space-x-2">
+              <Award className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+              <h4 className="text-sm font-bold text-slate-800">Your Rewards</h4>
+            </div>
+            {profile?.milestones && profile.milestones.length > 0 ? (
+              <div className="space-y-2">
+                {profile.milestones.map((m, idx) => (
+                  <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border border-slate-100 shadow-sm">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase">{m.totalWeight}kg Reached</span>
+                    <span className="text-xs font-bold font-mono text-blue-600 px-2 py-0.5 bg-blue-50 rounded">{m.couponCode}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                Reach <span className="text-slate-900 font-bold">10kg</span> to unlock your first unique <span className="text-slate-900 font-bold font-mono text-[10px]">EVOLVE-SAVE</span> discount code.
+              </p>
+            )}
           </div>
         </div>
 
@@ -268,14 +280,7 @@ export default function ConsumerDashboard() {
               </div>
             ))}
           </div>
-<<<<<<< HEAD
-=======
-          <div className="pt-2">
-            <button className="w-full py-3 bg-white text-slate-900 rounded-xl text-sm font-bold hover:bg-slate-200 transition">
-              Find Collection Point
-            </button>
-          </div>
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
+
         </div>
       </div>
     </div>

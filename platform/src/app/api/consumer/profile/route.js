@@ -14,14 +14,20 @@ export async function GET(request) {
             user = await prisma.user.findUnique({
                 where: { id: userId, role: 'CONSUMER' },
                 include: {
-                    wasteLogs: true
+                    wasteLogs: true,
+                    milestones: {
+                        orderBy: { totalWeight: 'asc' }
+                    }
                 }
             });
         } else {
             user = await prisma.user.findFirst({
                 where: { role: 'CONSUMER' },
                 include: {
-                    wasteLogs: true
+                    wasteLogs: true,
+                    milestones: {
+                        orderBy: { totalWeight: 'asc' }
+                    }
                 }
             });
         }
@@ -40,8 +46,9 @@ export async function GET(request) {
             stats: {
                 plasticDiverted: totalWeight,
                 creditsEarned: creditsEarned,
-                impact: "+12.5%" // Still static for now
-            }
+                impact: "+12.5%"
+            },
+            milestones: user.milestones
         };
 
         return NextResponse.json({ success: true, profile });

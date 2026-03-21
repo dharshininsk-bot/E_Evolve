@@ -5,14 +5,10 @@ export const runtime = 'nodejs';
 
 export async function POST(request) {
   try {
-    const { weight, plasticType, state, district, pincode, recyclerId } = await request.json();
+    const { weight, plasticType, state, district, pincode, recyclerId, collectorId } = await request.json();
 
-    // Upsert a demo collector for the flow
-    let user = await prisma.user.findFirst({ where: { role: "COLLECTOR" } });
-    if (!user) {
-      user = await prisma.user.create({
-        data: { email: `demo-collector-${Date.now()}@evolve.com`, role: "COLLECTOR" }
-      });
+    if (!collectorId) {
+      return NextResponse.json({ error: "Collector ID is required" }, { status: 400 });
     }
 
     const log = await prisma.wasteLog.create({
@@ -23,7 +19,7 @@ export async function POST(request) {
         state,
         district,
         pincode,
-        collectorId: user.id,
+        collectorId: collectorId,
         recyclerId: recyclerId || null
       }
     });

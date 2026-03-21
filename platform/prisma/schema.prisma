@@ -10,6 +10,7 @@ datasource db {
 model User {
   id               String             @id @default(cuid())
   email            String             @unique
+  password         String             @default("password123") // Added for login
   role             String             @default("CONSUMER") // CONSUMER, COLLECTOR, RECYCLER, PRODUCER
   creditsPurchased Float              @default(0) // Used by Producers
   createdAt        DateTime           @default(now())
@@ -19,15 +20,11 @@ model User {
   recycledLogs     WasteLog[]         @relation("RecyclerWasteLogs")
   milestones       Milestone[]
   recyclerProfile  RecyclerProfile?
-<<<<<<< HEAD
   collectorProfile CollectorProfile?
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
   purchases        CreditTransaction[] @relation("ProducerPurchases")
   sales            CreditTransaction[] @relation("RecyclerSales")
 }
 
-<<<<<<< HEAD
 model CollectorProfile {
   id             String   @id @default(cuid())
   userId         String   @unique
@@ -38,9 +35,6 @@ model CollectorProfile {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
-
-=======
->>>>>>> 96c684204a85d8db483cbbbe193125389cbff8ed
 model RecyclerProfile {
   id           String   @id @default(cuid())
   userId       String   @unique

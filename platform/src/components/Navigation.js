@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   BarChart3, 
   Trash2, 
@@ -20,11 +20,14 @@ const Navigation = () => {
   const pathname = usePathname();
   const [balance, setBalance] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const router = useRouter();
 
   const fetchBalance = async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/hedera/status");
+      if (!res.ok) return;
       const data = await res.json();
       if (data.balance) {
         setBalance(data.balance);
@@ -39,16 +42,34 @@ const Navigation = () => {
   useEffect(() => {
     fetchBalance();
     const interval = setInterval(fetchBalance, 30000); // refresh every 30s
+    
+    // Check user session
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
     return () => clearInterval(interval);
-  }, []);
+  }, [pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    router.push("/login");
+  };
 
   const navItems = [
     { label: "Public Impact", icon: Globe, path: "/" },
-    { label: "Consumer", icon: Users, path: "/dashboard/consumer" },
-    { label: "Collector", icon: Trash2, path: "/dashboard/collector" },
-    { label: "Recycler", icon: Factory, path: "/dashboard/recycler" },
-    { label: "Producer", icon: ShoppingBag, path: "/dashboard/producer" },
   ];
+
+  if (user) {
+    const role = user.role.charAt(0) + user.role.slice(1).toLowerCase();
+    navItems.push({ 
+      label: `${role} Dashboard`, 
+      icon: user.role === "CONSUMER" ? Users : user.role === "COLLECTOR" ? Trash2 : user.role === "RECYCLER" ? Factory : ShoppingBag, 
+      path: `/dashboard/${user.role.toLowerCase()}` 
+    });
+  }
 
   return (
     <div className="w-64 bg-slate-900 text-white min-h-screen flex flex-col border-r border-slate-800">
@@ -80,6 +101,18 @@ const Navigation = () => {
             );
           })}
         </ul>
+
+        {!user && (
+          <div className="px-4 mt-8">
+            <Link
+              href="/login"
+              className="flex items-center space-x-3 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-lg shadow-blue-600/20"
+            >
+              <Users className="w-5 h-5" />
+              <span>Sign In</span>
+            </Link>
+          </div>
+        )}
       </nav>
 
       {/* Hedera Status Indicator */}
