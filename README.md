@@ -13,7 +13,7 @@ A comprehensive, verifiable waste management and resource tracking platform desi
 - **Credit Marketplace**: Recyclers can sell PRCs to Producers directly via the platform's credit transaction engine.
 - **Modern UI**: Intuitive and responsive dashboards built with Tailwind CSS, Lucide React icons, and Recharts for data visualization.
 
-## 🛠 Tech Stack
+## Tech Stack
 
 - **Frontend & Framework**: [Next.js](https://nextjs.org) (App Router), React 19
 - **Database ORM**: [Prisma](https://www.prisma.io/)
@@ -22,7 +22,7 @@ A comprehensive, verifiable waste management and resource tracking platform desi
 - **Blockchain / DLT**: [@hashgraph/sdk](https://github.com/hashgraph/hedera-sdk-js)
 - **Charts**: [Recharts](https://recharts.org/)
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -63,7 +63,7 @@ A comprehensive, verifiable waste management and resource tracking platform desi
 
 6. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 📂 Project Structure
+## Project Structure
 
 - `/platform` - Main Next.js application directory.
   - `/src/app` - Standard Next.js 13+ App router containing pages, layouts, and role-specific dashboards (`/dashboard/consumer`, `/dashboard/collector`, etc.).
@@ -73,6 +73,6 @@ A comprehensive, verifiable waste management and resource tracking platform desi
   - `/prisma` - Contains `schema.prisma` defining PostgreSQL DB schema.
 - `/platform/*.js` - Various scripts located at the root for seeding, testing database queries, Hedera integration tests, and platform diagnosis (`check-db.js`, `verify-logic.js`, `seed-dashboards.js`, etc.).
 
-## 🤝 Contribution & License
+## Contribution & License
 
 Feel free to fork this repository, open issues, and submit PRs to contribute to E-Evolve's mission of transforming waste management!
